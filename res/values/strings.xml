@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="hello">Wirtualny Portfel</string>
+    <string name="app_name">Wirtualny Portfel</string>
+    <string name="hello_version">wersja 0.0001</string>
+    <string name="not_implemented">Funkcjonalność nie została jeszcze zaimplementowana :(</string>
+    <string name="apply">Zatwierdź</string>
+    <string name="cancel">Anuluj</string>
+    <string name="empty"></string>
+    <string name="ok">OK</string>
+    <string name="placeholder">…</string>
+    
+    <string name="settings_account">Konto użytkownika</string>
+    <string name="settings_account_hint">Ustawienia Twojego profilu w systemie Wirtualny Portfel.</string>
+    
+    <string name="transaction_value">Wartość transakcji:</string>
+    <string name="transaction_expense">Wydatek</string>
+    <string name="transaction_earning">Zarobek</string>
+    <string name="transaction_record_name">Nagraj opis</string>
+    
+    <string name="account_editor">Edytor kont</string>
+    <string name="account_editor_hint">Pozwala edytować Twoja listę kont finansowych.</string>
+    <string name="account_editor_caption">Dodaj nowe konto</string>
+    <string name="account_editor_name_title">Nazwa nowego konta:</string>
+    <string name="account_editor_name_hint">(nazwa konta)</string>
+    <string name="account_editor_initial_balance_title">Ilość dostępnych środków:</string>
+    <string name="account_editor_initial_balance_hint">(dostępne środki)</string>
+    <string name="account_editor_type_title">Typ konta:</string>
+    <string name="account_editor_type_prompt">Wybierz typ konta:</string>
+    <string name="account_already_exists">Konto o podanej nazwie już istnieje. Podaj inną nazwę.</string>
+    <string name="account_created">Konto zostało utworzone.</string>
+    
+    <string name="settings_synchronization">Ustawienia synchronizacji</string>
+    <string name="settings_synchronization_hint">Dostosowanie metody synchronizacji danych z zewnętrznymi serwerami Wirtualnego Portfela.</string>
+
+    <string name="newuser_title">Informacje o koncie użytkownika</string>
+    <string name="newuser_email">Adres e-mail Twojego profilu użytkownika:</string>
+    <string name="newuser_pass">Klucz dostępu Twojego profilu użytkownika:</string>
+    
+    <string name="numberinput_1">1</string>
+    <string name="numberinput_2">2</string>
+    <string name="numberinput_3">3</string>
+    <string name="numberinput_4">4</string>
+    <string name="numberinput_5">5</string>
+    <string name="numberinput_6">6</string>
+    <string name="numberinput_7">7</string>
+    <string name="numberinput_8">8</string>
+    <string name="numberinput_9">9</string>
+    <string name="numberinput_0">0</string>
+    <string name="numberinput_dot">.</string>
+    <string name="numberinput_comma">,</string>
+    <string name="numberinput_del">DEL</string>
+    <string name="numberinput_initialnum">0 zł</string>
+</resources>

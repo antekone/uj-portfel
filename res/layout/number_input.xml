@@ -1,0 +1,179 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/linearLayout1"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:orientation="vertical" >
+
+    <LinearLayout
+        android:id="@+id/linearLayout3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="20dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginRight="10dp"
+        android:layout_marginTop="10dp"
+        android:gravity="right"
+        android:orientation="horizontal" >
+
+        <TextView
+            android:id="@+id/numberLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:clickable="true"
+            android:gravity="right"
+            android:onClick="buttonDotLabel"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:text="@string/numberinput_0"
+            android:textAppearance="?android:attr/textAppearanceLarge"
+            android:textSize="38dp" />
+
+        <TextView
+            android:id="@+id/numberFactLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingLeft="5dp"
+            android:paddingRight="5dp"
+            android:layout_marginLeft="10dp"
+            android:clickable="true"
+            android:onClick="buttonDotLabel2"
+            android:text="@string/numberinput_0"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:id="@+id/currencyLabel"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:text="@string/ok" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/button1"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginLeft="15dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_1" />
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_2" />
+
+        <Button
+            android:id="@+id/button3"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_3" />
+
+        <Button
+            android:id="@+id/button5"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonDel"
+            android:text="@string/numberinput_del" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/LinearLayout01"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/Button01"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginLeft="15dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_4" />
+
+        <Button
+            android:id="@+id/Button02"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_5" />
+
+        <Button
+            android:id="@+id/Button03"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_6" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/LinearLayout02"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/Button05"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginLeft="15dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_7" />
+
+        <Button
+            android:id="@+id/Button06"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_8" />
+
+        <Button
+            android:id="@+id/Button04"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_9" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/LinearLayout03"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+
+        <Button
+            android:id="@+id/Button07"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginLeft="15dp"
+            android:onClick="buttonDot"
+            android:text="@string/numberinput_dot" />
+
+        <Button
+            android:id="@+id/button6"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:onClick="buttonClick"
+            android:text="@string/numberinput_0" />
+
+        <Button
+            android:id="@+id/button4"
+            android:layout_width="70dp"
+            android:layout_height="70dp"
+            android:layout_marginLeft="70dp"
+            android:onClick="buttonApply"
+            android:text="@string/ok" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/LinearLayout04"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="right" >
+    </LinearLayout>
+
+</LinearLayout>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
+	<PreferenceCategory 
+	    android:title="First category" 
+	    android:key="first_category">
+
+	    <CheckBoxPreference
+			android:key="perform_updates"
+			android:summary="Wykonuj aktualizacje na bieżąco. Sprawdzaj też stary urządzeń. Testuj zupełnie ogromny napis, który nie zmieści się w rozsądnej szerokości na tym małym ekraniku."
+			android:title="Aktualizacje"
+			android:defaultValue="true"
+		/>
+	    	
+	</PreferenceCategory>
+</PreferenceScreen>

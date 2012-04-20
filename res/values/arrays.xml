@@ -1,0 +1,6 @@
+<resources>
+    <string-array name="account_types">
+        <item>Konto w banku</item>
+        <item>Gotówka</item>
+    </string-array>
+</resources>

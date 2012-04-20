@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/textView1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:text="@string/account_editor_caption"
+            android:textAppearance="?android:attr/textAppearanceMedium" />
+
+        <TextView
+            android:id="@+id/textView2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="@string/account_editor_name_title" >
+        </TextView>
+
+        <EditText
+            android:id="@+id/account_name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:hint="@string/account_editor_name_hint"
+            android:singleLine="true" >
+
+            <requestFocus />
+        </EditText>
+
+        <TextView
+            android:id="@+id/textView4"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+			android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="@string/account_editor_type_title" />
+
+        <Spinner
+            android:id="@+id/account_type"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:entries="@array/account_types" />
+
+        <TextView
+            android:id="@+id/textView3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:text="@string/account_editor_initial_balance_title" />
+
+        <EditText
+            android:id="@+id/account_initial_balance"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="10dp"
+            android:layout_marginRight="10dp"
+            android:hint="@string/account_editor_initial_balance_hint"
+            android:inputType="number|numberDecimal"
+            android:singleLine="true" />
+
+        <LinearLayout
+            android:layout_marginTop="10dp"
+            android:gravity="center_horizontal"
+            android:orientation="horizontal"
+            android:layout_width="fill_parent"
+            android:layout_height="match_parent" >
+            
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:text="@string/apply"
+                android:onClick="applyCreation"
+                android:width="100dp" >
+
+            </Button>
+            
+            <Button
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:onClick="cancelCreation"
+                android:text="@string/cancel"
+                android:width="100dp" >
+                
+            </Button>
+        </LinearLayout>
+    </LinearLayout>
+
+</ScrollView>
