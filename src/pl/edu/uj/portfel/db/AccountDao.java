@@ -12,7 +12,7 @@ public class AccountDao {
 	public static AccountDao newFromCursor(Cursor c) {
 		AccountDao dao = new AccountDao();
 		
-		dao.id = c.getInt(c.getColumnIndexOrThrow("_id"));
+		dao.id = c.getLong(c.getColumnIndexOrThrow("_id"));
 		dao.name = c.getString(c.getColumnIndexOrThrow("name"));
 		dao.type = c.getInt(c.getColumnIndexOrThrow("type"));
 		dao.initialBalance = c.getDouble(c.getColumnIndexOrThrow("ibalance"));
@@ -35,4 +35,5 @@ public class AccountDao {
 	}
 	
 	public String getName() { return name; }
+	public long getId() { return id; }
 }

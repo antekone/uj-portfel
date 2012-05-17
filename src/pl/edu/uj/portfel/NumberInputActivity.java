@@ -131,12 +131,8 @@ public class NumberInputActivity extends Activity {
 		num *= 100;
 		num += fact;
 		
-		Log.d("X", "returning 3");
 		map.putExtra("OUTPUT", num);
-		Log.d("X", "returning 2");
 		setResult(RESULT_OK, map);
-		Log.d("X", "returning 1");
 		finish();
-		Log.d("X", "returning 0");
 	}
 }

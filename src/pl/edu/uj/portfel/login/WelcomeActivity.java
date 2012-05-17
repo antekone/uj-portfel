@@ -1,16 +1,17 @@
-package pl.edu.uj.portfel;
+package pl.edu.uj.portfel.login;
 
 import java.util.ArrayList;
 
+import pl.edu.uj.portfel.ErrorReporter;
+import pl.edu.uj.portfel.R;
 import pl.edu.uj.portfel.db.AccountDao;
 import pl.edu.uj.portfel.db.Database;
-import pl.edu.uj.portfel.login.LoginEntryChooser;
-import pl.edu.uj.portfel.login.LoginUserInfoAdapter;
 import pl.edu.uj.portfel.settings.SettingsActivity;
+import pl.edu.uj.portfel.transaction.TransactionInputActivity;
+import pl.edu.uj.portfel.transaction.TransactionListActivity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -55,7 +56,7 @@ public class WelcomeActivity extends Activity implements ErrorReporter, OnItemCl
     	xlist.clear();
     	for(int i = 1; i <= len; i++) {
     		AccountDao dao = db.getAccountByIndex(i);
-    		xlist.add(new LoginEntryChooser(dao.getName()));
+    		xlist.add(new LoginEntryChooser(dao.getId(), dao.getName()));
     	}
 	}
 
@@ -92,9 +93,13 @@ public class WelcomeActivity extends Activity implements ErrorReporter, OnItemCl
 
 	@Override
 	public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-		Log.d("X", "starting activity");
-		startActivityForResult(new Intent(this, NumberInputActivity.class), 1);
-		Log.d("X", "activity started");
+		Intent map = new Intent(this, TransactionListActivity.class);
+		
+		LoginEntryChooser entry = xlist.get(position);
+		map.putExtra("ACCOUNT_NAME", entry.getEntryText());
+		map.putExtra("ACCOUNT_ID", entry.getAccountId());
+		
+		startActivity(map); 
 	}
 	
 	@Override
@@ -103,7 +108,6 @@ public class WelcomeActivity extends Activity implements ErrorReporter, OnItemCl
 			return;
 		
 		long num = data.getLongExtra("OUTPUT", 0);
-		//Toast.makeText(this, Double.toString(num), Toast.LENGTH_SHORT).show();
 		
 		Intent transactionIntent = new Intent(this, TransactionInputActivity.class);
 		transactionIntent.putExtra("CASH", num);

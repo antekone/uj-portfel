@@ -30,32 +30,53 @@
         android:gravity="center" >
 
         <TextView
-            android:id="@+id/textView3"
+            android:id="@+id/transactionPlusBtn"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_gravity="center|center_vertical"
             android:layout_marginRight="10dp"
+            android:clickable="true"
             android:gravity="center"
+            android:onClick="plusBtnClick"
             android:padding="10dp"
             android:text="@string/transaction_earning"
             android:textAppearance="?android:attr/textAppearanceLarge" />
 
         <TextView
-            android:id="@+id/textView4"
+            android:id="@+id/transactionMinusBtn"
             android:layout_width="wrap_content"
             android:layout_height="50dp"
             android:layout_marginLeft="10dp"
+            android:clickable="true"
             android:gravity="center"
+            android:onClick="minusBtnClick"
             android:padding="10dp"
             android:text="@string/transaction_expense"
             android:textAppearance="?android:attr/textAppearanceLarge" />
     </LinearLayout>
 
+    <ListView
+        android:id="@+id/transactionAttributeList"
+        android:layout_width="match_parent"
+        android:layout_height="0dip"
+        android:layout_weight="1" >
+
+    </ListView>
+
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:gravity="center" >
+        android:layout_gravity="bottom|center"
+        android:layout_marginTop="5dp"
+        android:gravity="bottom|center" >
+
+        <Button
+            android:id="@+id/button2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:onClick="addTextAttribute"
+            android:text="@string/transaction_add_description" />
 
         <Button
             android:id="@+id/button1"
@@ -63,12 +84,6 @@
             android:layout_height="wrap_content"
             android:onClick="recordClicked"
             android:text="@string/transaction_record_name" />
-
-        <Button
-            android:id="@+id/button2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/placeholder" />
 
         <Button
             android:id="@+id/button3"
@@ -81,7 +96,6 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/placeholder" />
-
     </LinearLayout>
 
 </LinearLayout>
