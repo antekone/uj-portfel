@@ -28,13 +28,12 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 	private List<TransactionListItem> items;
 	private Database db;
 	private TransactionListViewAdapter listAdapter;
+	private long accId;
 	
 	public void onCreate(Bundle b) {
 		super.onCreate(b);
 		setContentView(R.layout.transaction_list);
 
-		db = new Database(this, this);
-		
 		holder = new ViewHolder();
 		holder.transactionListCaption = (TextView) findViewById(R.id.transactionListCaption);
 		
@@ -47,10 +46,15 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 	}
 	
 	void loadTransactionList(long id) {
+		db = new Database(this, this);
 		long[] ids = db.getTransactionIds(id);
 		items = new ArrayList<TransactionListItem>();
 		
+		Log.i("accId " + id, "ids size " + ids.length);
+		
 		for(long tid: ids) {
+			Log.i("accId " + id, "loading id " + tid);
+			
 			TransactionDao dao = db.getTransactionById(tid);
 			
 			TransactionListItem listItem = new TransactionListItem();
@@ -65,7 +69,7 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 		Bundle b = getIntent().getExtras();
 	
 		String accName = b.getString("ACCOUNT_NAME");
-		long accId = b.getLong("ACCOUNT_ID");
+		accId = b.getLong("ACCOUNT_ID");
 		
 		loadTransactionList(accId);
 		
@@ -83,8 +87,17 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+	public void onItemClick(AdapterView<?> arg0, View arg1, int idx, long arg3) {
+		TransactionListItem transaction = items.get(idx);
 		
+		long tid = transaction.getId();
+		long cash = transaction.getAmount();
+		
+		Intent transactionIntent = new Intent(this, TransactionInputActivity.class);
+		transactionIntent.putExtra("LOAD_TRANSACTION_ID", tid);
+		transactionIntent.putExtra("CASH", cash);
+		transactionIntent.putExtra("ACCOUNT_ID", accId);
+		startActivityForResult(transactionIntent, 2);
 	}
 	
 	public void addTransaction(View v) {
@@ -94,20 +107,22 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		Log.i("info", "result");
-		
+		items.clear();
+		loadTransactionList(accId);
+		listAdapter = new TransactionListViewAdapter(this, R.layout.transaction_list_item, items);
+		ListView list = (ListView) findViewById(R.id.transactionList);
+		list.setAdapter(listAdapter);
+
 		if(data == null)
 			return;
 		
-		Log.i("info", "result2");
-		
 		if(requestCode == 0) {
-			Log.i("info", "result3");
 			long num = data.getLongExtra("OUTPUT", 0);
 			
 			Intent transactionIntent = new Intent(this, TransactionInputActivity.class);
 			transactionIntent.putExtra("CASH", num);
-			startActivity(transactionIntent);
+			transactionIntent.putExtra("ACCOUNT_ID", accId);
+			startActivityForResult(transactionIntent, 1);
 		}
 	}
 }

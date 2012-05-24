@@ -16,7 +16,7 @@ public class AccountDao {
 		dao.name = c.getString(c.getColumnIndexOrThrow("name"));
 		dao.type = c.getInt(c.getColumnIndexOrThrow("type"));
 		dao.initialBalance = c.getDouble(c.getColumnIndexOrThrow("ibalance"));
-		
+		c.close();
 		return dao;
 	}
 	

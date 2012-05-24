@@ -2,14 +2,15 @@ package pl.edu.uj.portfel.db;
 
 import java.util.List;
 
+import pl.edu.uj.portfel.transaction.TransactionAttribute;
+import pl.edu.uj.portfel.transaction.TransactionInputActivity;
+import pl.edu.uj.portfel.transaction.TransactionInputActivity.TransactionType;
 import android.content.ContentValues;
 import android.database.Cursor;
 
-import pl.edu.uj.portfel.transaction.TransactionAttribute;
-import pl.edu.uj.portfel.transaction.TransactionInputActivity.TransactionType;
-
 public class TransactionDao {
 	private long id;
+	private long accId;
 	private int type;
 	private long amount;
 	private List<TransactionAttribute> attributes;
@@ -17,10 +18,22 @@ public class TransactionDao {
 	public long getId() { return id; }
 	public void setId(long i) { id = i; }
 	
+	public long getAccId() { return accId; }
+	public void setAccId(long _accId) { accId = _accId; }
+	
 	public void setAmount(long x)  { amount = x; }
 	public long getAmount() { return amount; }
 	
 	public int getType() { return type; }
+	
+	public TransactionType getTypeObj() {
+		if(type == 0)
+			return TransactionType.EARNING;
+		else if(type == 1)
+			return TransactionType.EXPENSE;
+		else
+			throw new RuntimeException();
+	}
 	
 	public void setType(TransactionType type) {
 		if(type == TransactionType.EARNING)
@@ -35,6 +48,7 @@ public class TransactionDao {
 	public ContentValues toContentValues() {
 		ContentValues values = new ContentValues();
 		
+		values.put("accId", accId);
 		values.put("type", type);
 		values.put("amount", amount);
 		
@@ -45,13 +59,15 @@ public class TransactionDao {
 		TransactionDao dao = new TransactionDao();
 		
 		dao.id = c.getLong(c.getColumnIndexOrThrow("_id"));
+		dao.accId = c.getLong(c.getColumnIndexOrThrow("accId"));
 		dao.amount = c.getLong(c.getColumnIndexOrThrow("amount"));
 		dao.type = c.getInt(c.getColumnIndexOrThrow("type"));
 		
+		c.close();
 		return dao;
 	}
 	
 	public static String[] getColumnList() {
-		return new String[] { "_id", "amount", "type" };
+		return new String[] { "_id", "accId", "amount", "type" };
 	}
 }

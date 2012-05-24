@@ -6,35 +6,53 @@ import java.util.List;
 
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.R;
+import pl.edu.uj.portfel.db.AttributeDao;
 import pl.edu.uj.portfel.db.Database;
+import pl.edu.uj.portfel.db.TransactionDao;
 import pl.edu.uj.portfel.recorder.AudioRecorder;
 import pl.edu.uj.portfel.transaction.attributes.text.InputActivity;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
 import pl.edu.uj.portfel.utils.Currency;
 import pl.edu.uj.portfel.utils.StringUtils;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
+import android.widget.ListAdapter;
 import android.widget.ListView;
+import android.widget.PopupWindow;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class TransactionInputActivity extends Activity implements OnItemClickListener, ErrorReporter {
+public class TransactionInputActivity extends Activity implements OnItemClickListener, OnItemLongClickListener, ErrorReporter {
 	private AudioRecorder recorder;
 	private ViewHolder holder;
 	private Database db;
-	
+	private long accId;
+	private long prevTid;
 	private TransactionType type;
 	private List<TransactionAttribute> attributes;
 	private TransactionAttributeListViewAdapter listAdapter;
+	private boolean update;
+	private PopupWindow menuPopup;
+	
+	private TextTransactionAttribute textAttributeUnderEdition;
 	
 	public enum TransactionType {
 		EXPENSE, EARNING
 	}
+	
+	long amount;
 	
 	class ViewHolder {
 		public TextView plusBtn;
@@ -52,7 +70,12 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		attributes = new ArrayList<TransactionAttribute>();
 		Currency currency = new Currency();
 		
-		loadTransactions(db);
+		Bundle args = getIntent().getExtras();
+		if(args.containsKey("LOAD_TRANSACTION_ID")) {
+			update = true;
+			loadAttributes(db, args);
+		} else
+			update = false;
 		
 		holder = new ViewHolder();
 		holder.cashValue = (TextView) findViewById(R.id.cashValue);
@@ -60,16 +83,37 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		holder.plusBtn = (TextView) findViewById(R.id.transactionPlusBtn);
 
 		long cash = getIntent().getExtras().getLong("CASH");
+		amount = cash;
+
+		accId = getIntent().getExtras().getLong("ACCOUNT_ID");
 		holder.cashValue.setText(StringUtils.getCanonicalCashValue(cash, currency));
 		
 		ListView list = (ListView) findViewById(R.id.transactionAttributeList);
 		listAdapter = new TransactionAttributeListViewAdapter(this, R.layout.transaction_item, attributes);
 		list.setAdapter(listAdapter);
 		list.setOnItemClickListener(this);
+		list.setOnItemLongClickListener(this);
+		
+		updateTransactionType();
 	}
 	
-	public void loadTransactions(Database db) {
-		// TODO
+	public void loadAttributes(Database db, Bundle args) {
+		long tid = args.getLong("LOAD_TRANSACTION_ID");
+		prevTid = tid;
+		
+		long[] ids = db.getAttributeIds(tid);
+		for(long aid: ids) {
+			AttributeDao adao = db.getAttributeById(aid);
+			TransactionAttribute attr = adao.createTransactionAttribute();
+			
+			attributes.add(attr);
+		}
+		
+		TransactionDao tdao = db.getTransactionById(tid);
+		type = tdao.getTypeObj();
+		
+		// can't update gui now, because Holder doesn't exist yet
+		// updateTransactionTypeGui();
 	}
 
 	public void recordClicked(View v) {
@@ -98,12 +142,21 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		startActivityForResult(transactionIntent, 1);
 	}
 	
+	public void editTextAttribute(TextTransactionAttribute attr) {
+		Intent transactionIntent = new Intent(this, InputActivity.class);
+		transactionIntent.putExtra("INITIAL_CAPTION", attr.getCaption());
+		transactionIntent.putExtra("INITIAL_DESCRIPTION", attr.getDescription());
+		textAttributeUnderEdition = attr;
+		startActivityForResult(transactionIntent, 2);
+	}
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if(data == null)
 			return;
 		
-		if(requestCode == 1) {
+		if(requestCode == 1 && resultCode == RESULT_OK) {
+			// Added a new attribute
 			String caption = data.getCharSequenceExtra("CAPTION").toString();
 			String description = data.getCharSequenceExtra("DESCRIPTION").toString();
 			
@@ -111,25 +164,138 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 			
 			attributes.add(attr);
 			listAdapter.notifyDataSetChanged();
+			
+			saveTransaction();
+		} else if(requestCode == 2 && resultCode == RESULT_OK) {
+			// Edited an existing text attribute
+			
+			textAttributeUnderEdition.setCaption(data.getCharSequenceExtra("CAPTION").toString());
+			textAttributeUnderEdition.setDescription(data.getCharSequenceExtra("DESCRIPTION").toString());
+			
+			listAdapter.notifyDataSetChanged();
+			
+			saveTransaction();
 		}
 	}
 
+	public void updateTransactionType() {
+		if(type == TransactionType.EARNING) {
+			holder.plusBtn.setBackgroundColor(Color.GREEN);
+			holder.minusBtn.setBackgroundColor(Color.BLACK);
+		} else if(type == TransactionType.EXPENSE) {
+			holder.minusBtn.setBackgroundColor(Color.RED);
+			holder.plusBtn.setBackgroundColor(Color.BLACK);
+		}
+		
+		saveTransactionType();
+	}
 	
 	public void plusBtnClick(View v) {
-		holder.plusBtn.setBackgroundColor(Color.GREEN);
-		holder.minusBtn.setBackgroundColor(Color.BLACK);
 		type = TransactionType.EARNING;
+		updateTransactionType();
 	}
 	
 	public void minusBtnClick(View v) {
-		holder.minusBtn.setBackgroundColor(Color.RED);
-		holder.plusBtn.setBackgroundColor(Color.BLACK);
 		type = TransactionType.EXPENSE;
+		updateTransactionType();
 	}
 
 	@Override
-	public void onItemClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+	public void onItemClick(AdapterView<?> arg0, View arg1, int idx, long arg3) {
+		TransactionAttribute attr = attributes.get(idx);
+		if(attr instanceof TextTransactionAttribute) {
+			editTextAttribute((TextTransactionAttribute) attr);
+		}
+	}
+	
+	private void processPopupMenuIndex(int idx, int itemIdx) {
+		switch(idx) {
+		case 0: // edit
+			break;
+		case 1: // mark
+			break;
+		case 2: // delete
+			attributes.remove(itemIdx);
+			listAdapter.notifyDataSetChanged();
+			saveTransaction();
+			break;
+		}
+	}
+	
+	@Override
+	public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
+		final CharSequence[] items = { 
+			getString(R.string.transaction_attribute_popup_edit), 
+			getString(R.string.transaction_attribute_popup_mark), 
+			getString(R.string.transaction_attribute_popup_delete), 
+		};
+
+		final int itemIdx = arg2;
 		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		//builder.setTitle("");
+		builder.setItems(items, new DialogInterface.OnClickListener() {
+			@Override
+			public void onClick(DialogInterface arg0, int idx) {
+				processPopupMenuIndex(idx, itemIdx);
+			}
+		});
+		
+		AlertDialog alert = builder.create();
+		alert.show();
+		
+		return false;
+	}
+	
+	public void finishAndSaveClicked(View v) {
+		reportInfo("Zapisywanie transakcji");
+		saveTransaction();
+		Intent map = new Intent();
+		setResult(RESULT_OK, map);
+		finish();
+	}
+	
+	public void saveTransaction() {
+		if(type == null) {
+			reportInfo("Wybierz typ transakcji!");
+			return;
+		}
+		
+		TransactionDao dao = new TransactionDao();
+		dao.setType(type);
+		dao.setAmount(amount);
+		dao.setAccId(accId);
+		
+		long tid = 0;
+		
+		if(update)
+			db.removeTransaction(prevTid);
+		
+		db.insertTransaction(dao);
+		tid = dao.getId();
+		
+		ArrayList<AttributeDao> attributesToStore = new ArrayList<AttributeDao>();
+		
+		for(TransactionAttribute attr: attributes) {
+			AttributeDao adao = AttributeDao.fromAttributeObj(tid, attr);
+			attributesToStore.add(adao);
+		}
+		
+		db.removeAttributesForTid(tid);
+		for(AttributeDao a: attributesToStore) {
+			db.writeAttribute(a);
+		}
+		
+		prevTid = tid;
+	}
+	
+	public void saveTransactionType() {
+		if(prevTid <= 0)
+			return;
+		
+		TransactionDao tdao = db.getTransactionById(prevTid);
+		tdao.setType(type);
+		db.updateTransaction(tdao);
 	}
 
 	@Override
