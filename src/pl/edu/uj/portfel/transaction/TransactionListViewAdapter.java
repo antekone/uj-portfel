@@ -13,14 +13,18 @@ import android.widget.TextView;
 
 public class TransactionListViewAdapter extends ArrayAdapter<TransactionListItem> {
 	private List<TransactionListItem> items;
+	private Context ctx;
 	
 	private class ViewHolder {
 		TextView transactionItemAmount;
+		TextView transactionItemTitle;
+		TextView transactionItemSymbol;
 	}
 	
 	public TransactionListViewAdapter(Context ctx, int id, List<TransactionListItem> source) {
 		super(ctx, id, source);
 		items = source;
+		this.ctx = ctx;
 	}
 	
 	@Override
@@ -33,6 +37,8 @@ public class TransactionListViewAdapter extends ArrayAdapter<TransactionListItem
 			
 			holder = new ViewHolder();
 			holder.transactionItemAmount = (TextView) v.findViewById(R.id.transactionItemAmount);
+			holder.transactionItemTitle = (TextView) v.findViewById(R.id.transactionItemTitle);
+			holder.transactionItemSymbol = (TextView) v.findViewById(R.id.transactionItemSymbol);
 
 			v.setTag(holder);
 		} else {
@@ -41,7 +47,10 @@ public class TransactionListViewAdapter extends ArrayAdapter<TransactionListItem
 		
 		TransactionListItem item = items.get(pos);
 		
-		holder.transactionItemAmount.setText(Long.toString(item.getAmount()));
+		holder.transactionItemAmount.setText(Long.toString(item.getAmount()) + " " + ctx.getString(R.string.currency_small));
+		holder.transactionItemTitle.setText("\n" + item.getName() + "\n");
+		holder.transactionItemSymbol.setText(item.getDate());
+		
 		return v;
 	}
 }

@@ -13,6 +13,7 @@ public class TransactionDao {
 	private long accId;
 	private int type;
 	private long amount;
+	private long timestamp;
 	private List<TransactionAttribute> attributes;
 	
 	public long getId() { return id; }
@@ -23,6 +24,9 @@ public class TransactionDao {
 	
 	public void setAmount(long x)  { amount = x; }
 	public long getAmount() { return amount; }
+	
+	public long getTimestamp() { return timestamp; }
+	public void setTimestamp(long t) { timestamp = t; }
 	
 	public int getType() { return type; }
 	
@@ -51,6 +55,7 @@ public class TransactionDao {
 		values.put("accId", accId);
 		values.put("type", type);
 		values.put("amount", amount);
+		values.put("timestamp", timestamp);
 		
 		return values;
 	}
@@ -62,12 +67,13 @@ public class TransactionDao {
 		dao.accId = c.getLong(c.getColumnIndexOrThrow("accId"));
 		dao.amount = c.getLong(c.getColumnIndexOrThrow("amount"));
 		dao.type = c.getInt(c.getColumnIndexOrThrow("type"));
+		dao.timestamp = c.getLong(c.getColumnIndexOrThrow("timestamp"));
 		
 		c.close();
 		return dao;
 	}
 	
 	public static String[] getColumnList() {
-		return new String[] { "_id", "accId", "amount", "type" };
+		return new String[] { "_id", "accId", "amount", "type", "timestamp" };
 	}
 }

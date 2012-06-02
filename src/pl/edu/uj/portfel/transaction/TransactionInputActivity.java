@@ -2,6 +2,7 @@ package pl.edu.uj.portfel.transaction;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import pl.edu.uj.portfel.ErrorReporter;
@@ -12,23 +13,20 @@ import pl.edu.uj.portfel.db.TransactionDao;
 import pl.edu.uj.portfel.recorder.AudioRecorder;
 import pl.edu.uj.portfel.transaction.attributes.text.InputActivity;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
+import pl.edu.uj.portfel.utils.ChoiceActivatedClosure;
+import pl.edu.uj.portfel.utils.ChoiceList;
 import pl.edu.uj.portfel.utils.Currency;
 import pl.edu.uj.portfel.utils.StringUtils;
 import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.database.DataSetObserver;
 import android.graphics.Color;
 import android.os.Bundle;
-import android.view.LayoutInflater;
+import android.util.Log;
 import android.view.View;
-import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
-import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.TextView;
@@ -40,6 +38,7 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 	private Database db;
 	private long accId;
 	private long prevTid;
+	private long timestamp;
 	private TransactionType type;
 	private List<TransactionAttribute> attributes;
 	private TransactionAttributeListViewAdapter listAdapter;
@@ -111,6 +110,8 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		
 		TransactionDao tdao = db.getTransactionById(tid);
 		type = tdao.getTypeObj();
+		timestamp = tdao.getTimestamp();
+		Log.d("ts", "loaded id=" + tid + ", timestamp=" + timestamp);
 		
 		// can't update gui now, because Holder doesn't exist yet
 		// updateTransactionTypeGui();
@@ -150,6 +151,26 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		startActivityForResult(transactionIntent, 2);
 	}
 	
+	private int countTextAttributes() {
+		int count = 0;
+		
+		for(TransactionAttribute ta: attributes) {
+			if(ta instanceof TextTransactionAttribute)
+				count++;
+		}
+		
+		return count;
+	}
+	
+	private TextTransactionAttribute getFirstTextTransactionAttribute() {
+		for(TransactionAttribute ta: attributes) {
+			if(ta instanceof TextTransactionAttribute)
+				return (TextTransactionAttribute) ta;
+		}
+		
+		return null;
+	}
+	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 		if(data == null)
@@ -165,14 +186,20 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 			attributes.add(attr);
 			listAdapter.notifyDataSetChanged();
 			
+			if(countTextAttributes() == 1)
+				attr.setTitle(true);
+			
 			saveTransaction();
 		} else if(requestCode == 2 && resultCode == RESULT_OK) {
 			// Edited an existing text attribute
 			
 			textAttributeUnderEdition.setCaption(data.getCharSequenceExtra("CAPTION").toString());
 			textAttributeUnderEdition.setDescription(data.getCharSequenceExtra("DESCRIPTION").toString());
-			
+
 			listAdapter.notifyDataSetChanged();
+
+			if(countTextAttributes() == 1)
+				getFirstTextTransactionAttribute().setTitle(true);
 			
 			saveTransaction();
 		}
@@ -202,63 +229,94 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 
 	@Override
 	public void onItemClick(AdapterView<?> arg0, View arg1, int idx, long arg3) {
-		TransactionAttribute attr = attributes.get(idx);
+		attributeClicked(attributes.get(idx));
+	}
+	
+	private void attributeClicked(TransactionAttribute attr) {
 		if(attr instanceof TextTransactionAttribute) {
 			editTextAttribute((TextTransactionAttribute) attr);
 		}
 	}
 	
-	private void processPopupMenuIndex(int idx, int itemIdx) {
-		switch(idx) {
-		case 0: // edit
-			break;
-		case 1: // mark
-			break;
-		case 2: // delete
-			attributes.remove(itemIdx);
-			listAdapter.notifyDataSetChanged();
-			saveTransaction();
-			break;
+	private void clearTextMarks() {
+		// db.clearTextMarksForTid(prevTid);
+		for(TransactionAttribute attr: attributes) {
+			if(attr instanceof TextTransactionAttribute) {
+				TextTransactionAttribute tattr = (TextTransactionAttribute) attr;
+				tattr.setTitle(false);
+			}
 		}
+	}
+	
+	private boolean markTextAttribute(TextTransactionAttribute attr) {
+		boolean ret = false;
+
+		clearTextMarks();
+		attr.setTitle(true);
+		saveTransaction();
+		ret = true;
+		
+		return ret;
 	}
 	
 	@Override
 	public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int arg2, long arg3) {
-		final CharSequence[] items = { 
-			getString(R.string.transaction_attribute_popup_edit), 
-			getString(R.string.transaction_attribute_popup_mark), 
-			getString(R.string.transaction_attribute_popup_delete), 
-		};
-
-		final int itemIdx = arg2;
+		ChoiceList clist = new ChoiceList(this, getString(R.string.select_action));
+		final TransactionAttribute attr = attributes.get(arg2);
+		final int cIdx = arg2;
 		
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		//builder.setTitle("");
-		builder.setItems(items, new DialogInterface.OnClickListener() {
+		clist.add(getString(R.string.transaction_attribute_popup_edit), new ChoiceActivatedClosure() {
 			@Override
-			public void onClick(DialogInterface arg0, int idx) {
-				processPopupMenuIndex(idx, itemIdx);
+			public void actionPerformed(DialogInterface dialog, int which) {
+				attributeClicked(attr);
 			}
 		});
 		
-		AlertDialog alert = builder.create();
-		alert.show();
+		if(attr instanceof TextTransactionAttribute) {
+			clist.add(getString(R.string.transaction_attribute_popup_mark), new ChoiceActivatedClosure() {
+				@Override
+				public void actionPerformed(DialogInterface dialog, int which) {
+					if(markTextAttribute((TextTransactionAttribute) attr))
+						reportInfo(getString(R.string.transaction_attribute_selected_as_title));
+				}
+			});
+		}
 		
+		clist.add(getString(R.string.transaction_attribute_popup_delete), new ChoiceActivatedClosure() {
+			@Override
+			public void actionPerformed(DialogInterface dialog, int which) {
+				attributes.remove(cIdx);
+				listAdapter.notifyDataSetChanged();
+				saveTransaction();
+			}
+		});
+		
+		clist.run();
 		return false;
+	}
+	
+	@Override
+	public void onBackPressed() {
+		finishAndSaveClickedLogic();
+	}
+	
+	public void finishAndSaveClickedLogic() {
+		if(saveTransaction()) {
+			Intent map = new Intent();
+			setResult(RESULT_OK, map);
+			finish();
+		}
 	}
 	
 	public void finishAndSaveClicked(View v) {
 		reportInfo("Zapisywanie transakcji");
-		saveTransaction();
-		Intent map = new Intent();
-		setResult(RESULT_OK, map);
-		finish();
+		finishAndSaveClickedLogic();
 	}
 	
-	public void saveTransaction() {
+	public boolean saveTransaction() {
 		if(type == null) {
 			reportInfo("Wybierz typ transakcji!");
-			return;
+			return false;
 		}
 		
 		TransactionDao dao = new TransactionDao();
@@ -268,8 +326,13 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		
 		long tid = 0;
 		
-		if(update)
+		if(update) {
 			db.removeTransaction(prevTid);
+			dao.setTimestamp(timestamp);
+		} else {
+			Date now = new Date();
+			dao.setTimestamp(now.getTime());
+		}
 		
 		db.insertTransaction(dao);
 		tid = dao.getId();
@@ -287,6 +350,11 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		}
 		
 		prevTid = tid;
+		
+		if(! update)
+			update = true;
+		
+		return true;
 	}
 	
 	public void saveTransactionType() {

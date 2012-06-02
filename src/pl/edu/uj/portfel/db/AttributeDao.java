@@ -34,6 +34,7 @@ public class AttributeDao {
 		dao.setType(AttributeType.TEXT);
 		dao.setTitle(attr.getCaption());
 		dao.setAux1(attr.getDescription());
+		dao.setAux2(attr.getTitle() ? "title" : "");
 		
 		return dao;
 	}
@@ -49,6 +50,11 @@ public class AttributeDao {
 	
 	public TextTransactionAttribute createTextTransactionAttribute() {
 		TextTransactionAttribute attr = new TextTransactionAttribute(title, aux1);
+		if(aux2 != null && aux2.compareTo("title") == 0)
+			attr.setTitle(true);
+		else
+			attr.setTitle(false);
+		
 		return attr;
 	}
 	
@@ -68,7 +74,11 @@ public class AttributeDao {
 		else
 			throw new RuntimeException();
 	}
-	
+
+	/**
+	 * @note Remember to change getTitleCandidatesForTransactionId!
+	 * @param type
+	 */
 	public void setType(AttributeType type) {
 		if(type == AttributeType.TEXT)
 			setType(1);
@@ -119,8 +129,8 @@ public class AttributeDao {
 		dao.aux1 = c.getString(c.getColumnIndexOrThrow("aux1"));
 		dao.aux2 = c.getString(c.getColumnIndexOrThrow("aux2"));
 		dao.aux3 = c.getString(c.getColumnIndexOrThrow("aux3"));
-		c.close();
 		
+		c.close();
 		return dao;
 	}
 	

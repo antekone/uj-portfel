@@ -1,6 +1,9 @@
 package pl.edu.uj.portfel.transaction;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 
 import pl.edu.uj.portfel.ErrorReporter;
@@ -8,18 +11,24 @@ import pl.edu.uj.portfel.NumberInputActivity;
 import pl.edu.uj.portfel.R;
 import pl.edu.uj.portfel.db.Database;
 import pl.edu.uj.portfel.db.TransactionDao;
+import pl.edu.uj.portfel.utils.ChoiceActivatedClosure;
+import pl.edu.uj.portfel.utils.ChoiceList;
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class TransactionListActivity extends Activity implements ErrorReporter, OnItemClickListener {
+public class TransactionListActivity extends Activity implements ErrorReporter, OnItemClickListener, OnItemLongClickListener {
 	class ViewHolder {
 		TextView transactionListCaption;
 	}
@@ -36,36 +45,52 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 
 		holder = new ViewHolder();
 		holder.transactionListCaption = (TextView) findViewById(R.id.transactionListCaption);
-		
+
+		items = new ArrayList<TransactionListItem>();
+		db = new Database(this, this);
 		initActivity();
 		
 		ListView list = (ListView) findViewById(R.id.transactionList);
 		listAdapter = new TransactionListViewAdapter(this, R.layout.transaction_list_item, items);
 		list.setAdapter(listAdapter);
 		list.setOnItemClickListener(this);
+		list.setOnItemLongClickListener(this);
 	}
 	
-	void loadTransactionList(long id) {
-		db = new Database(this, this);
-		long[] ids = db.getTransactionIds(id);
-		items = new ArrayList<TransactionListItem>();
-		
-		Log.i("accId " + id, "ids size " + ids.length);
+	public String getTransactionTitle(TransactionDao dao) {
+		String candidateTitle = db.getTitleCandidateForTransactionId(dao.getId());
+		if(candidateTitle == null || candidateTitle.length() == 0) {
+			return getString(R.string.transaction_noname);
+		} else
+			return candidateTitle;
+	}
+	
+	void loadTransactionList(long accountId) {
+		long[] ids = db.getTransactionIds(accountId);
+		items.clear();
 		
 		for(long tid: ids) {
-			Log.i("accId " + id, "loading id " + tid);
-			
 			TransactionDao dao = db.getTransactionById(tid);
 			
 			TransactionListItem listItem = new TransactionListItem();
 			listItem.setId(dao.getId());
 			listItem.setAmount(dao.getAmount());
-			listItem.setName("no name");
+			listItem.setDate(getDateFromTransactionDao(dao));
+			listItem.setName(getTransactionTitle(dao));
 			items.add(listItem);
 		}
 	}
 	
-	void initActivity() {
+	private String getDateFromTransactionDao(TransactionDao dao) {
+		long ts = dao.getTimestamp();
+		
+		GregorianCalendar gc = new GregorianCalendar();
+		gc.setTime(new Date(ts));
+
+		return String.format("%02d %02d %d", gc.get(Calendar.DAY_OF_MONTH), 1 + gc.get(Calendar.MONTH), gc.get(Calendar.YEAR));
+	}
+	
+	private void initActivity() {
 		Bundle b = getIntent().getExtras();
 	
 		String accName = b.getString("ACCOUNT_NAME");
@@ -124,5 +149,58 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 			transactionIntent.putExtra("ACCOUNT_ID", accId);
 			startActivityForResult(transactionIntent, 1);
 		}
+	}
+
+	@Override
+	public boolean onItemLongClick(AdapterView<?> arg0, View arg1, int idx, long arg3) {
+		ChoiceList list = new ChoiceList(this, getString(R.string.select_action));
+		
+		final AdapterView<?> a = arg0;
+		final View b = arg1;
+		final int c = idx;
+		final long d = arg3;
+		
+		list.add(getString(R.string.transaction_edit), new ChoiceActivatedClosure() {
+			@Override
+			public void actionPerformed(DialogInterface dialog, int which) {
+				onItemClick(a, b, c, d);
+			}
+		});
+		
+		list.add(getString(R.string.transaction_remove), new ChoiceActivatedClosure() {
+			@Override
+			public void actionPerformed(DialogInterface dialog, int which) {
+				removeTransactionGuarded(c);
+			}
+		});
+		
+		list.run();
+		return true;
+	}
+	
+	void removeTransactionGuarded(int idx) {
+		AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
+		final int fidx = idx;
+		dlgAlert.setMessage(R.string.transaction_remove_text);
+		dlgAlert.setTitle(R.string.warning);
+		dlgAlert.setPositiveButton(R.string.ok, new OnClickListener() {
+			@Override
+			public void onClick(DialogInterface dialog, int which) {
+				removeTransaction(fidx);
+			}
+		});
+		
+		dlgAlert.setNegativeButton(R.string.cancel, null);
+		dlgAlert.setCancelable(true);
+		dlgAlert.create().show();
+	}
+	
+	void removeTransaction(int idx) {
+		TransactionListItem item = items.get(idx);
+		db.removeTransaction(item.getId());
+		
+		loadTransactionList(accId);
+		
+		listAdapter.notifyDataSetChanged();
 	}
 }

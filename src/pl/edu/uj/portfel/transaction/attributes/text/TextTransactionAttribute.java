@@ -8,16 +8,26 @@ import pl.edu.uj.portfel.transaction.TransactionInputActivity.TransactionType;
 public class TextTransactionAttribute extends TransactionAttribute {
 	private String descr;
 	private String caption;
+	private boolean title;
 	
 	public TextTransactionAttribute(String caption, String descr) {
 		super(TransactionAttribute.Type.TEXT);
 		
 		setCaption(caption);
 		setDescription(descr);
+		setTitle(false);
 	}
 	
 	public String getDescription() {
 		return descr;
+	}
+	
+	public void setTitle(boolean f) {
+		title = f;
+	}
+	
+	public boolean getTitle() {
+		return title;
 	}
 	
 	public String getCaption() {

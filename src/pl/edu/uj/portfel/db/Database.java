@@ -17,7 +17,7 @@ import android.util.Log;
  * CREATE TABLE wpl_accounts ( _id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type INTEGER, ibalance DOUBLE );
  * 
  * sqlite> .schema wpl_transactions
- * CREATE TABLE wpl_transactions ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER );
+ * CREATE TABLE wpl_transactions ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER , timestamp timestamp);
  *
  */
 
@@ -42,7 +42,7 @@ public class Database extends SQLiteOpenHelper {
 		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type INTEGER, ibalance DOUBLE )", ACCOUNTS_TABLE_NAME));
 
 		Log.v("db", String.format("creating table %s", TRANSACTIONS_TABLE_NAME));
-		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER )", TRANSACTIONS_TABLE_NAME));
+		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER, timestamp TIMESTAMP )", TRANSACTIONS_TABLE_NAME));
 		
 		Log.v("db", String.format("creating table %s", ATTRIBUTES_TABLE_NAME));
 		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, tId INTEGER, type INTEGER, title TEXT, aux1 TEXT, aux2 TEXT, aux3 TEXT)", ATTRIBUTES_TABLE_NAME));
@@ -107,7 +107,7 @@ public class Database extends SQLiteOpenHelper {
 			return new long[] { };
 		
 		long[] table = new long[count];
-		Cursor c = getReadableDatabase().query(TRANSACTIONS_TABLE_NAME, new String[] { "_id" }, "accId=?", new String[] { Long.toString(accId) }, null, null, null, null);
+		Cursor c = getReadableDatabase().query(TRANSACTIONS_TABLE_NAME, new String[] { "_id" }, "accId=?", new String[] { Long.toString(accId) }, null, null, "timestamp desc", null);
 		if(c.getCount() != count) {
 			reporter.reportError(String.format("idcount: %d, Cursor count: %d", count, c.getCount()));
 			c.close();
@@ -151,8 +151,10 @@ public class Database extends SQLiteOpenHelper {
 	
 	public AccountDao getAccountByIndex(int idx) {
 		Cursor c = getReadableDatabase().query(ACCOUNTS_TABLE_NAME, AccountDao.getColumnList(), "_id=?", new String[] { Integer.toString(idx) }, null, null, null, "1");
-		if(c.getCount() != 1)
+		if(c.getCount() != 1) {
+			c.close();
 			return null;
+		}
 		
 		c.moveToFirst();
 		return AccountDao.newFromCursor(c);
@@ -160,8 +162,10 @@ public class Database extends SQLiteOpenHelper {
 	
 	public TransactionDao getTransactionById(long id) {
 		Cursor c = getReadableDatabase().query(TRANSACTIONS_TABLE_NAME, TransactionDao.getColumnList(), "_id=?", new String[] { Long.toString(id) }, null, null, null, "1");
-		if(c.getCount() != 1)
+		if(c.getCount() != 1) {
+			c.close();
 			return null;
+		}
 		
 		c.moveToFirst();
 		return TransactionDao.newFromCursor(c);
@@ -169,11 +173,26 @@ public class Database extends SQLiteOpenHelper {
 	
 	public AttributeDao getAttributeById(long id) {
 		Cursor c = getReadableDatabase().query(ATTRIBUTES_TABLE_NAME, AttributeDao.getColumnList(), "_id=?", new String[] { Long.toString(id) }, null, null, null, "1");
-		if(c.getCount() != 1)
+		if(c.getCount() != 1) {
+			c.close();
 			return null;
+		}
 		
 		c.moveToFirst();
 		return AttributeDao.newFromCursor(c);
+	}
+	
+	public String getTitleCandidateForTransactionId(long id) {
+		Cursor c = getReadableDatabase().query(ATTRIBUTES_TABLE_NAME, new String[] { "title" }, "tId=? and type=1 and aux2='title'", new String[] { Long.toString(id) }, null, null, null, "1");
+		if(c.getCount() < 1) {
+			c.close();
+			return null;
+		}
+		
+		c.moveToFirst();
+		String str = c.getString(c.getColumnIndexOrThrow("title"));
+		c.close();
+		return str;
 	}
 
 	public boolean writeAccount(String name, int type, double initialBalance) {
@@ -270,6 +289,20 @@ public class Database extends SQLiteOpenHelper {
 			return true;
 		} catch(SQLException e) {
 			reportError(":( -- sql#R");
+			return false;
+		}
+	}
+	
+	public boolean clearTextMarksForTid(long tid) {
+		SQLiteDatabase dbw = getWritableDatabase();
+		
+		try {
+			ContentValues cv = new ContentValues();
+			cv.put("aux2", "");
+			dbw.update(ATTRIBUTES_TABLE_NAME, cv, "tid=?", new String[] { Long.toString(tid) } );
+			return true;
+		} catch(SQLException e) {
+			reportError(":( -- sql#CT");
 			return false;
 		}
 	}
