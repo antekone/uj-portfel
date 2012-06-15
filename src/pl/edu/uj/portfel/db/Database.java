@@ -338,6 +338,8 @@ public class Database extends SQLiteOpenHelper {
 	@Override
 	public void onUpgrade(SQLiteDatabase db, int v1, int v2) {
 		reporter.reportInfo("Aktualizowanie tabel SQL...");
+		
+		// Oh yes!
 		db.execSQL(String.format("drop table %s", ACCOUNTS_TABLE_NAME));
 		db.execSQL(String.format("drop table %s", TRANSACTIONS_TABLE_NAME));
 		db.execSQL(String.format("drop table %s", ATTRIBUTES_TABLE_NAME));
