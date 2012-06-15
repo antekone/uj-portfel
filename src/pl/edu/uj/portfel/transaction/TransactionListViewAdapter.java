@@ -47,7 +47,9 @@ public class TransactionListViewAdapter extends ArrayAdapter<TransactionListItem
 		
 		TransactionListItem item = items.get(pos);
 		
-		holder.transactionItemAmount.setText(Long.toString(item.getAmount()) + " " + ctx.getString(R.string.currency_small));
+		String amountStr = String.format("%d.%02d %s", item.getAmount() / 100, item.getAmount() % 100, ctx.getString(R.string.currency_small));
+		
+		holder.transactionItemAmount.setText(amountStr);
 		holder.transactionItemTitle.setText("\n" + item.getName() + "\n");
 		holder.transactionItemSymbol.setText(item.getDate());
 		

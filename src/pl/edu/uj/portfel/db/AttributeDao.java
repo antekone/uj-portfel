@@ -2,9 +2,9 @@ package pl.edu.uj.portfel.db;
 
 import pl.edu.uj.portfel.transaction.TransactionAttribute;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
+import pl.edu.uj.portfel.transaction.image.ImageTransactionAttribute;
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.util.Log;
 
 public class AttributeDao {
 	private long id;
@@ -22,6 +22,7 @@ public class AttributeDao {
 	public static AttributeDao fromAttributeObj(long tid, TransactionAttribute attr) {
 		switch(attr.getType()) {
 		case TEXT: return fromTextAttributeObj(tid, (TextTransactionAttribute) attr);
+		case PICTURE: return fromImageAttributeObj(tid, (ImageTransactionAttribute) attr);
 		}
 		
 		throw new RuntimeException();
@@ -39,10 +40,22 @@ public class AttributeDao {
 		return dao;
 	}
 	
+	public static AttributeDao fromImageAttributeObj(long tid, ImageTransactionAttribute attr) {
+		AttributeDao dao = new AttributeDao();
+		
+		dao.setTid(tid);
+		dao.setType(AttributeType.IMAGE);
+		dao.setAux1(attr.getFilename());
+		
+		return dao;
+	}
+	
 	public TransactionAttribute createTransactionAttribute() {
 		switch(getTypeObj()) {
 		case TEXT:
 			return createTextTransactionAttribute();
+		case IMAGE:
+			return createImageTransactionAttribute();
 		}
 		
 		throw new RuntimeException();
@@ -56,6 +69,10 @@ public class AttributeDao {
 			attr.setTitle(false);
 		
 		return attr;
+	}
+	
+	public ImageTransactionAttribute createImageTransactionAttribute() {
+		return new ImageTransactionAttribute(aux1);
 	}
 	
 	public long getId() { return id; }

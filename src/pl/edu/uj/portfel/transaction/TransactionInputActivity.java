@@ -7,12 +7,14 @@ import java.util.List;
 
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.R;
+import pl.edu.uj.portfel.camera.CameraPhotoActivity;
 import pl.edu.uj.portfel.db.AttributeDao;
 import pl.edu.uj.portfel.db.Database;
 import pl.edu.uj.portfel.db.TransactionDao;
 import pl.edu.uj.portfel.recorder.AudioRecorder;
 import pl.edu.uj.portfel.transaction.attributes.text.InputActivity;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
+import pl.edu.uj.portfel.transaction.image.ImageTransactionAttribute;
 import pl.edu.uj.portfel.utils.ChoiceActivatedClosure;
 import pl.edu.uj.portfel.utils.ChoiceList;
 import pl.edu.uj.portfel.utils.Currency;
@@ -138,6 +140,11 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		}
 	}
 	
+	public void shotClicked(View v) {
+		Intent i = new Intent(this, CameraPhotoActivity.class);
+		startActivityForResult(i, 3);
+	}
+	
 	public void addTextAttribute(View v) {
 		Intent transactionIntent = new Intent(this, InputActivity.class);
 		startActivityForResult(transactionIntent, 1);
@@ -200,6 +207,14 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 
 			if(countTextAttributes() == 1)
 				getFirstTextTransactionAttribute().setTitle(true);
+			
+			saveTransaction();
+		} else if(requestCode == 3 && resultCode == RESULT_OK) {
+			String filename = data.getCharSequenceExtra("FILENAME").toString();
+			ImageTransactionAttribute attr  = new ImageTransactionAttribute(filename);
+			
+			attributes.add(attr);
+			listAdapter.notifyDataSetChanged();
 			
 			saveTransaction();
 		}

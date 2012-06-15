@@ -22,6 +22,7 @@
     <string name="transaction_expense">Wydatek</string>
     <string name="transaction_earning">Zarobek</string>
     <string name="transaction_record_name">Nagraj opis</string>
+    <string name="transaction_take_picture">Zrób zdjęcie</string>
     <string name="transaction_add_description">Dodaj notatkę</string>
     <string name="transaction_add">Nowa…</string>
     <string name="transaction_save">Zapisz</string>
