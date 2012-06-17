@@ -1,8 +1,9 @@
 package pl.edu.uj.portfel.db;
 
 import pl.edu.uj.portfel.transaction.TransactionAttribute;
+import pl.edu.uj.portfel.transaction.attributes.audio.AudioTransactionAttribute;
+import pl.edu.uj.portfel.transaction.attributes.image.ImageTransactionAttribute;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
-import pl.edu.uj.portfel.transaction.image.ImageTransactionAttribute;
 import android.content.ContentValues;
 import android.database.Cursor;
 
@@ -23,6 +24,7 @@ public class AttributeDao {
 		switch(attr.getType()) {
 		case TEXT: return fromTextAttributeObj(tid, (TextTransactionAttribute) attr);
 		case PICTURE: return fromImageAttributeObj(tid, (ImageTransactionAttribute) attr);
+		case SOUND: return fromAudioAttributeObj(tid, (AudioTransactionAttribute) attr);
 		}
 		
 		throw new RuntimeException();
@@ -50,12 +52,24 @@ public class AttributeDao {
 		return dao;
 	}
 	
+	public static AttributeDao fromAudioAttributeObj(long tid, AudioTransactionAttribute attr) {
+		AttributeDao dao = new AttributeDao();
+		
+		dao.setTid(tid);
+		dao.setType(AttributeType.AUDIO);
+		dao.setAux1(attr.getFilename());
+		
+		return dao;
+	}
+	
 	public TransactionAttribute createTransactionAttribute() {
 		switch(getTypeObj()) {
 		case TEXT:
 			return createTextTransactionAttribute();
 		case IMAGE:
 			return createImageTransactionAttribute();
+		case AUDIO:
+			return createAudioTransactionAttribute();
 		}
 		
 		throw new RuntimeException();
@@ -73,6 +87,10 @@ public class AttributeDao {
 	
 	public ImageTransactionAttribute createImageTransactionAttribute() {
 		return new ImageTransactionAttribute(aux1);
+	}
+	
+	public AudioTransactionAttribute createAudioTransactionAttribute() {
+		return new AudioTransactionAttribute(aux1);
 	}
 	
 	public long getId() { return id; }

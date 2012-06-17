@@ -1,7 +1,8 @@
-package pl.edu.uj.portfel.transaction.image;
+package pl.edu.uj.portfel.transaction.attributes.image;
 
 import pl.edu.uj.portfel.transaction.TransactionAttribute;
 import pl.edu.uj.portfel.transaction.TransactionInputActivity.TransactionType;
+import android.os.Environment;
 import android.view.View;
 import android.widget.TextView;
 
@@ -21,7 +22,9 @@ public class ImageTransactionAttribute extends TransactionAttribute {
 
 	@Override
 	public void renderDescription(TextView v) {
-		v.setText(filename);
+		String dir = String.format("%s/portfel/", Environment.getExternalStorageDirectory().getAbsolutePath());
+		String shortName = filename.replace(dir, "");
+		v.setText(shortName);
 	}
 
 	@Override

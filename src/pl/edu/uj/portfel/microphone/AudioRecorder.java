@@ -1,4 +1,4 @@
-package pl.edu.uj.portfel.recorder;
+package pl.edu.uj.portfel.microphone;
 
 import java.io.File;
 import java.io.IOException;
@@ -11,7 +11,7 @@ public class AudioRecorder {
 	private String path;
 
 	public AudioRecorder(String path) {
-		this.path = sanitizePath(path);
+		this.path = sanitizePath("/portfel/" + path);
 	}
 
 	private String sanitizePath(String path) {
@@ -26,6 +26,10 @@ public class AudioRecorder {
 		return Environment.getExternalStorageDirectory().getAbsolutePath() + path;
 	}
 	
+	public String getFilename() {
+		return path;
+	}
+	
 	public void start() throws IOException {
 		String state = Environment.getExternalStorageState();
 		if(! state.equals(Environment.MEDIA_MOUNTED)) {
@@ -33,11 +37,13 @@ public class AudioRecorder {
 		}
 		
 		File directory = new File(path).getParentFile();
-		if(! directory.exists() && ! directory.mkdirs()) {
+		directory.mkdirs();
+		
+		if(! directory.exists()) {
 			throw new IOException("Bledna nazwa pliku");
 		}
 		
-		recorder.setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION);
+		recorder.setAudioSource(MediaRecorder.AudioSource.DEFAULT);
 		recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP);
 		recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB);
 		recorder.setOutputFile(path);

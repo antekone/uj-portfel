@@ -1,4 +1,5 @@
 package pl.edu.uj.portfel.camera;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -10,14 +11,14 @@ import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
 import android.os.Bundle;
-import android.util.Log;
+import android.os.Environment;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.FrameLayout;
 
 public class CameraPhotoActivity extends Activity {
-	Preview preview;
+	CameraPreview preview;
 	Button buttonClick;
 
 	/** Called when the activity is first created. */
@@ -26,13 +27,17 @@ public class CameraPhotoActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.camerademo);
 
-		preview = new Preview(this);
+		preview = new CameraPreview(this);
 		((FrameLayout) findViewById(R.id.preview)).addView(preview);
 
 		buttonClick = (Button) findViewById(R.id.buttonClick);
 		buttonClick.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				preview.camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+				try {
+					preview.camera.takePicture(shutterCallback, rawCallback, jpegCallback);
+				} catch(RuntimeException e) { 
+					e.printStackTrace();
+				}
 			}
 		});
 	}
@@ -68,8 +73,16 @@ public class CameraPhotoActivity extends Activity {
 		public void onPictureTaken(byte[] data, Camera camera) {
 			FileOutputStream outStream = null;
 			try {
-				String outputFilename = String.format("/sdcard/%d.jpg", System.currentTimeMillis());
-				outStream = new FileOutputStream(outputFilename);
+				String dir = String.format("%s/portfel", Environment.getExternalStorageDirectory().getAbsolutePath());
+				String outputFilename = String.format("%s/%d.jpg", dir, System.currentTimeMillis());
+				
+				File fdir = new File(dir);
+				File ffile = new File(outputFilename);
+				
+				fdir.mkdirs();
+				ffile.createNewFile();
+				
+				outStream = new FileOutputStream(ffile);
 				outStream.write(data);
 				outStream.close();
 				

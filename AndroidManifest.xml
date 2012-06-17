@@ -7,6 +7,7 @@
     <uses-sdk android:minSdkVersion="7" android:targetSdkVersion="10" />
     
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
 	<uses-permission android:name="android.permission.RECORD_AUDIO" />
 	<uses-permission android:name="android.permission.CAMERA"/>
 	<uses-feature android:name="android.hardware.camera" />
@@ -32,6 +33,9 @@
         <activity android:name=".transaction.attributes.text.InputActivity"></activity>
         <activity android:name=".transaction.TransactionListActivity"></activity>
         <activity android:name=".camera.CameraPhotoActivity"></activity>
+        <activity android:name=".camera.PhotoPreviewActivity"></activity>
+        <activity android:name=".microphone.AudioRecorderActivity"></activity>
+        <activity android:name=".microphone.AudioPlayerActivity"></activity>
     </application>
 
 </manifest>

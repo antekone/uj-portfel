@@ -1,6 +1,5 @@
 package pl.edu.uj.portfel.transaction;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -8,13 +7,17 @@ import java.util.List;
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.R;
 import pl.edu.uj.portfel.camera.CameraPhotoActivity;
+import pl.edu.uj.portfel.camera.PhotoPreviewActivity;
 import pl.edu.uj.portfel.db.AttributeDao;
 import pl.edu.uj.portfel.db.Database;
 import pl.edu.uj.portfel.db.TransactionDao;
-import pl.edu.uj.portfel.recorder.AudioRecorder;
+import pl.edu.uj.portfel.microphone.AudioPlayerActivity;
+import pl.edu.uj.portfel.microphone.AudioRecorder;
+import pl.edu.uj.portfel.microphone.AudioRecorderActivity;
+import pl.edu.uj.portfel.transaction.attributes.audio.AudioTransactionAttribute;
+import pl.edu.uj.portfel.transaction.attributes.image.ImageTransactionAttribute;
 import pl.edu.uj.portfel.transaction.attributes.text.InputActivity;
 import pl.edu.uj.portfel.transaction.attributes.text.TextTransactionAttribute;
-import pl.edu.uj.portfel.transaction.image.ImageTransactionAttribute;
 import pl.edu.uj.portfel.utils.ChoiceActivatedClosure;
 import pl.edu.uj.portfel.utils.ChoiceList;
 import pl.edu.uj.portfel.utils.Currency;
@@ -120,24 +123,27 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 	}
 
 	public void recordClicked(View v) {
-		try {
-			if (recorder == null) {
-				recorder = new AudioRecorder("/w-portfel/test.3gp");
-				recorder.start();
-				
-				Toast.makeText(this, "recording start", Toast.LENGTH_SHORT).show();
-			} else {
-				recorder.stop();
-				Toast.makeText(this, "recording stop", Toast.LENGTH_SHORT).show();
-			}
-		} catch (IOException e) {
-			try {
-				if(recorder != null)
-					recorder.stop();
-			} catch(IOException ex) {
-				
-			}
-		}
+//		try {
+//			if (recorder == null) {
+//				recorder = new AudioRecorder("/w-portfel/test.3gp");
+//				recorder.start();
+//				
+//				Toast.makeText(this, "recording start", Toast.LENGTH_SHORT).show();
+//			} else {
+//				recorder.stop();
+//				Toast.makeText(this, "recording stop", Toast.LENGTH_SHORT).show();
+//			}
+//		} catch (IOException e) {
+//			try {
+//				if(recorder != null)
+//					recorder.stop();
+//			} catch(IOException ex) {
+//				
+//			}
+//		}
+		
+		Intent i = new Intent(this, AudioRecorderActivity.class);
+		startActivityForResult(i, 4);
 	}
 	
 	public void shotClicked(View v) {
@@ -156,6 +162,18 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		transactionIntent.putExtra("INITIAL_DESCRIPTION", attr.getDescription());
 		textAttributeUnderEdition = attr;
 		startActivityForResult(transactionIntent, 2);
+	}
+	
+	public void previewImageAttribute(ImageTransactionAttribute attr) {
+		Intent intent = new Intent(this, PhotoPreviewActivity.class);
+		intent.putExtra("FILENAME", attr.getFilename());
+		startActivityForResult(intent, 99);
+	}
+	
+	public void playAudioAttribute(AudioTransactionAttribute attr) {
+		Intent intent = new Intent(this, AudioPlayerActivity.class);
+		intent.putExtra("FILENAME", attr.getFilename());
+		startActivityForResult(intent, 99);
 	}
 	
 	private int countTextAttributes() {
@@ -211,11 +229,19 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 			saveTransaction();
 		} else if(requestCode == 3 && resultCode == RESULT_OK) {
 			String filename = data.getCharSequenceExtra("FILENAME").toString();
-			ImageTransactionAttribute attr  = new ImageTransactionAttribute(filename);
+			ImageTransactionAttribute attr = new ImageTransactionAttribute(filename);
 			
 			attributes.add(attr);
 			listAdapter.notifyDataSetChanged();
 			
+			saveTransaction();
+		} else if(requestCode ==4 && resultCode == RESULT_OK) {
+			String filename = data.getCharSequenceExtra("FILENAME").toString();
+			AudioTransactionAttribute attr = new AudioTransactionAttribute(filename);
+			
+			attributes.add(attr);
+			
+			listAdapter.notifyDataSetChanged();
 			saveTransaction();
 		}
 	}
@@ -250,6 +276,10 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 	private void attributeClicked(TransactionAttribute attr) {
 		if(attr instanceof TextTransactionAttribute) {
 			editTextAttribute((TextTransactionAttribute) attr);
+		} else if(attr instanceof ImageTransactionAttribute) {
+			previewImageAttribute((ImageTransactionAttribute) attr);
+		} else if(attr instanceof AudioTransactionAttribute) {
+			playAudioAttribute((AudioTransactionAttribute) attr);
 		}
 	}
 	
@@ -280,12 +310,32 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		final TransactionAttribute attr = attributes.get(arg2);
 		final int cIdx = arg2;
 		
-		clist.add(getString(R.string.transaction_attribute_popup_edit), new ChoiceActivatedClosure() {
-			@Override
-			public void actionPerformed(DialogInterface dialog, int which) {
-				attributeClicked(attr);
-			}
-		});
+		if(attr instanceof TextTransactionAttribute) {
+			clist.add(getString(R.string.transaction_attribute_popup_edit), new ChoiceActivatedClosure() {
+				@Override
+				public void actionPerformed(DialogInterface dialog, int which) {
+					attributeClicked(attr);
+				}
+			});
+		}
+		
+		if(attr instanceof ImageTransactionAttribute) {
+			clist.add(getString(R.string.transaction_attribute_popup_preview), new ChoiceActivatedClosure() {
+				@Override
+				public void actionPerformed(DialogInterface dialog, int which) {
+					attributeClicked(attr);
+				}
+			});
+		}
+		
+		if(attr instanceof AudioTransactionAttribute) {
+			clist.add(getString(R.string.transaction_attribute_popup_play), new ChoiceActivatedClosure() {
+				@Override
+				public void actionPerformed(DialogInterface dialog, int which) {
+					attributeClicked(attr);
+				}
+			});
+		}
 		
 		if(attr instanceof TextTransactionAttribute) {
 			clist.add(getString(R.string.transaction_attribute_popup_mark), new ChoiceActivatedClosure() {
