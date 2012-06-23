@@ -467,16 +467,16 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 	}
 	
 	public void syncToServer() {
-        final ProgressDialog progress = new ProgressDialog(this);
-        progress.setTitle("Czekaj");
-        progress.setCancelable(false);
-        progress.setMessage("Zapisywanie...");
-        progress.show();
+//        final ProgressDialog progress = new ProgressDialog(this);
+//        progress.setTitle("Czekaj");
+//        progress.setCancelable(false);
+//        progress.setMessage("Zapisywanie...");
+//        progress.show();
         
 		WPAsyncTask task = new WPAsyncTask(this, server) {
 			@Override
 			public void onFinished() {
-				runOnUiThread(new Runnable() { public void run() { progress.dismiss(); } });
+//				runOnUiThread(new Runnable() { public void run() { progress.dismiss(); } });
 			}
 
 			@Override
