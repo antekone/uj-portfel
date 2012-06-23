@@ -16,7 +16,7 @@ public class AttributeDao {
 	private String aux2;
 	private String aux3;
 	
-	enum AttributeType {
+	public enum AttributeType {
 		TEXT, IMAGE, AUDIO, VIDEO
 	}
 	

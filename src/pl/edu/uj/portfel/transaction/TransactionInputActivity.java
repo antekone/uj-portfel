@@ -4,16 +4,23 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.R;
+import pl.edu.uj.portfel.WPAsyncTask;
 import pl.edu.uj.portfel.camera.CameraPhotoActivity;
 import pl.edu.uj.portfel.camera.PhotoPreviewActivity;
+import pl.edu.uj.portfel.db.AccountDao;
 import pl.edu.uj.portfel.db.AttributeDao;
 import pl.edu.uj.portfel.db.Database;
 import pl.edu.uj.portfel.db.TransactionDao;
 import pl.edu.uj.portfel.microphone.AudioPlayerActivity;
 import pl.edu.uj.portfel.microphone.AudioRecorder;
 import pl.edu.uj.portfel.microphone.AudioRecorderActivity;
+import pl.edu.uj.portfel.server.Server;
 import pl.edu.uj.portfel.transaction.attributes.audio.AudioTransactionAttribute;
 import pl.edu.uj.portfel.transaction.attributes.image.ImageTransactionAttribute;
 import pl.edu.uj.portfel.transaction.attributes.text.InputActivity;
@@ -23,6 +30,7 @@ import pl.edu.uj.portfel.utils.ChoiceList;
 import pl.edu.uj.portfel.utils.Currency;
 import pl.edu.uj.portfel.utils.StringUtils;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Color;
@@ -39,11 +47,14 @@ import android.widget.Toast;
 
 public class TransactionInputActivity extends Activity implements OnItemClickListener, OnItemLongClickListener, ErrorReporter {
 	private AudioRecorder recorder;
+	private Server server;
 	private ViewHolder holder;
 	private Database db;
+	private String serverToken;
 	private long accId;
 	private long prevTid;
 	private long timestamp;
+	private long rid;
 	private TransactionType type;
 	private List<TransactionAttribute> attributes;
 	private TransactionAttributeListViewAdapter listAdapter;
@@ -69,6 +80,7 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		super.onCreate(bundle);
 		setContentView(R.layout.transaction);
 		
+		server = new Server();
 		db = new Database(this, this);
 		
 		attributes = new ArrayList<TransactionAttribute>();
@@ -81,15 +93,17 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		} else
 			update = false;
 		
+		serverToken = args.getString("SERVER_TOKEN");
+		
 		holder = new ViewHolder();
 		holder.cashValue = (TextView) findViewById(R.id.cashValue);
 		holder.minusBtn = (TextView) findViewById(R.id.transactionMinusBtn);
 		holder.plusBtn = (TextView) findViewById(R.id.transactionPlusBtn);
 
-		long cash = getIntent().getExtras().getLong("CASH");
+		long cash = args.getLong("CASH");
 		amount = cash;
 
-		accId = getIntent().getExtras().getLong("ACCOUNT_ID");
+		accId = args.getLong("ACCOUNT_ID");
 		holder.cashValue.setText(StringUtils.getCanonicalCashValue(cash, currency));
 		
 		ListView list = (ListView) findViewById(R.id.transactionAttributeList);
@@ -116,6 +130,7 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		TransactionDao tdao = db.getTransactionById(tid);
 		type = tdao.getTypeObj();
 		timestamp = tdao.getTimestamp();
+		rid = tdao.getRid();
 		Log.d("ts", "loaded id=" + tid + ", timestamp=" + timestamp);
 		
 		// can't update gui now, because Holder doesn't exist yet
@@ -388,6 +403,7 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		dao.setType(type);
 		dao.setAmount(amount);
 		dao.setAccId(accId);
+		dao.setRid(rid);
 		
 		long tid = 0;
 		
@@ -415,11 +431,73 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		}
 		
 		prevTid = tid;
+		rid = dao.getRid();
 		
 		if(! update)
 			update = true;
 		
+		syncToServer();
 		return true;
+	}
+	
+	public String createAttributeBlob(TransactionDao dao) {
+		try {
+			long[] ids = db.getAttributeIds(dao.getId());
+			JSONArray arr = new JSONArray();
+			
+			for(long id: ids) {
+				AttributeDao attrDao = db.getAttributeById(id);
+				if(attrDao.getTypeObj() == AttributeDao.AttributeType.TEXT) { 
+					JSONObject obj = new JSONObject();
+					
+					obj.put("aux1", attrDao.getAux1());
+					obj.put("aux2", attrDao.getAux2());
+					obj.put("aux3", attrDao.getAux3());
+					obj.put("type", attrDao.getType());
+					obj.put("title", attrDao.getTitle());
+					
+				arr.put(obj);
+				}
+			}
+			
+			return arr.toString();
+		} catch(JSONException e) {
+			return "";
+		}
+	}
+	
+	public void syncToServer() {
+        final ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("Czekaj");
+        progress.setCancelable(false);
+        progress.setMessage("Zapisywanie...");
+        progress.show();
+        
+		WPAsyncTask task = new WPAsyncTask(this, server) {
+			@Override
+			public void onFinished() {
+				runOnUiThread(new Runnable() { public void run() { progress.dismiss(); } });
+			}
+
+			@Override
+			public void run() {
+				TransactionDao tdao = db.getTransactionById(prevTid);
+				if(tdao.getRid() == 0) {
+					AccountDao adao = db.getAccountById(accId);
+					
+					String blob = createAttributeBlob(tdao);
+					if(blob.length() > 0) {
+						tdao.setRid(server.createTransaction(serverToken, tdao, adao.getRemoteId(), blob));
+						db.updateTransaction(tdao);
+						rid = tdao.getRid();
+					}
+				}
+				
+				onFinished();
+			}
+		};
+		
+		new Thread(task).start();
 	}
 	
 	public void saveTransactionType() {
@@ -429,6 +507,8 @@ public class TransactionInputActivity extends Activity implements OnItemClickLis
 		TransactionDao tdao = db.getTransactionById(prevTid);
 		tdao.setType(type);
 		db.updateTransaction(tdao);
+		
+		syncToServer();
 	}
 
 	@Override

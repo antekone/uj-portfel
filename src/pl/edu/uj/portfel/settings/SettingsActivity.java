@@ -16,9 +16,12 @@ import android.widget.Toast;
 
 public class SettingsActivity extends ListActivity {
 	private SettingsAdapter adapter;
+	private String serverToken;
 	
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		
+		serverToken = getIntent().getExtras().getString("SERVER_TOKEN");
 		
 		if(adapter == null) {
 			ArrayList<Setting> items = new ArrayList<Setting>();
@@ -36,7 +39,9 @@ public class SettingsActivity extends ListActivity {
 		Class destClass = items.get(position).getDestActivity();
 		
 		if(destClass != null) {
-			startActivity(new Intent(this, destClass));
+			Intent args = new Intent(this, destClass);
+			args.putExtra("SERVER_TOKEN", serverToken);
+			startActivity(args);
 		} else {
 			Toast.makeText(this, R.string.not_implemented, Toast.LENGTH_SHORT).show();
 		}

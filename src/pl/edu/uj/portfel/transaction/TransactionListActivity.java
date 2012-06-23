@@ -9,17 +9,22 @@ import java.util.List;
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.NumberInputActivity;
 import pl.edu.uj.portfel.R;
+import pl.edu.uj.portfel.WPAsyncTask;
+import pl.edu.uj.portfel.db.AttributeDao;
 import pl.edu.uj.portfel.db.Database;
 import pl.edu.uj.portfel.db.TransactionDao;
+import pl.edu.uj.portfel.server.AttributeList;
+import pl.edu.uj.portfel.server.Server;
+import pl.edu.uj.portfel.server.TransactionList;
 import pl.edu.uj.portfel.utils.ChoiceActivatedClosure;
 import pl.edu.uj.portfel.utils.ChoiceList;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -38,10 +43,18 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 	private Database db;
 	private TransactionListViewAdapter listAdapter;
 	private long accId;
+	private long remoteAccId;
+	
+	private Server server;
+	private String serverToken;
 	
 	public void onCreate(Bundle b) {
 		super.onCreate(b);
 		setContentView(R.layout.transaction_list);
+		
+		server = new Server();
+		serverToken = getIntent().getExtras().getString("SERVER_TOKEN");
+		remoteAccId = getIntent().getExtras().getLong("REMOTE_ACCID");
 
 		holder = new ViewHolder();
 		holder.transactionListCaption = (TextView) findViewById(R.id.transactionListCaption);
@@ -55,6 +68,62 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 		list.setAdapter(listAdapter);
 		list.setOnItemClickListener(this);
 		list.setOnItemLongClickListener(this);
+		
+		sync();
+	}
+	
+	public void syncTransaction(TransactionDao local, TransactionDao remote) {
+		if(local.getAmount() != remote.getAmount())
+			local.setAmount(remote.getAmount());
+	}
+	
+	public void sync() {
+        final ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("Czekaj");
+        progress.setCancelable(false);
+        progress.setMessage("Synchronizacja...");
+        progress.show();
+		
+		WPAsyncTask syncTask = new WPAsyncTask(this, server) {
+
+			@Override
+			public void onFinished() {
+				runOnUiThread(new Runnable() { public void run() { progress.dismiss(); refreshTransactionList(); } });
+			}
+
+			@Override
+			public void run() {
+				TransactionList tnList = server.getTransactionList(serverToken, accId, remoteAccId);
+				
+				for(TransactionDao dao: tnList.getTransactionList()) {
+					long[] ids = db.getTransactionIds(accId);
+					boolean exists = false;
+					
+					for(long id: ids) {
+						TransactionDao localDao = db.getTransactionById(id);
+						
+						if(localDao.getRid() == dao.getRid()) {
+							syncTransaction(localDao, dao);
+							exists = true;
+							break;
+						}
+					}
+					
+					if(! exists) {
+						db.writeTransaction(dao);
+						
+						AttributeList attrList = server.getAttributeList(serverToken, dao.getId(), dao.getRid());
+						for(AttributeDao adao: attrList.getAttributeList()) {
+							db.writeAttribute(adao);
+						}
+					}
+				}
+				
+				onFinished();
+			}
+		};
+		
+		new Thread(syncTask).start();
 	}
 	
 	public String getTransactionTitle(TransactionDao dao) {
@@ -122,6 +191,7 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 		transactionIntent.putExtra("LOAD_TRANSACTION_ID", tid);
 		transactionIntent.putExtra("CASH", cash);
 		transactionIntent.putExtra("ACCOUNT_ID", accId);
+		transactionIntent.putExtra("SERVER_TOKEN", serverToken);
 		startActivityForResult(transactionIntent, 2);
 	}
 	
@@ -147,6 +217,7 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 			Intent transactionIntent = new Intent(this, TransactionInputActivity.class);
 			transactionIntent.putExtra("CASH", num);
 			transactionIntent.putExtra("ACCOUNT_ID", accId);
+			transactionIntent.putExtra("SERVER_TOKEN", serverToken);
 			startActivityForResult(transactionIntent, 1);
 		}
 	}
@@ -178,7 +249,7 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 		return true;
 	}
 	
-	void removeTransactionGuarded(int idx) {
+	private void removeTransactionGuarded(int idx) {
 		AlertDialog.Builder dlgAlert  = new AlertDialog.Builder(this);
 		final int fidx = idx;
 		dlgAlert.setMessage(R.string.transaction_remove_text);
@@ -195,10 +266,13 @@ public class TransactionListActivity extends Activity implements ErrorReporter, 
 		dlgAlert.create().show();
 	}
 	
-	void removeTransaction(int idx) {
+	private void removeTransaction(int idx) {
 		TransactionListItem item = items.get(idx);
 		db.removeTransaction(item.getId());
-		
+		refreshTransactionList();
+	}
+	
+	private void refreshTransactionList() {
 		loadTransactionList(accId);
 		
 		listAdapter.notifyDataSetChanged();

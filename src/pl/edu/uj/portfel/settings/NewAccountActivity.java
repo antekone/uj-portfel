@@ -2,9 +2,12 @@ package pl.edu.uj.portfel.settings;
 
 import pl.edu.uj.portfel.ErrorReporter;
 import pl.edu.uj.portfel.R;
+import pl.edu.uj.portfel.WPAsyncTask;
+import pl.edu.uj.portfel.db.AccountDao;
 import pl.edu.uj.portfel.db.Database;
+import pl.edu.uj.portfel.server.Server;
 import android.app.Activity;
-import android.database.sqlite.SQLiteDatabase;
+import android.app.ProgressDialog;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.EditText;
@@ -13,12 +16,17 @@ import android.widget.Toast;
 
 public class NewAccountActivity extends Activity implements ErrorReporter {
 	private Database db;
+	private Server server;
+	private String serverToken;
 	
 	@Override
 	public void onCreate(Bundle savedState) {
 		super.onCreate(savedState);
 		setContentView(R.layout.new_account);
 		
+		serverToken = getIntent().getExtras().getString("SERVER_TOKEN");
+		
+		server = new Server();
 		db = new Database(this, this);
 	}
 	
@@ -46,8 +54,49 @@ public class NewAccountActivity extends Activity implements ErrorReporter {
 		} else {
 			db.writeAccount(accountName, type, initialBalance);
 			Toast.makeText(this, R.string.account_created, Toast.LENGTH_SHORT).show();
-			finish();
+			
+			sync(accountName, type, initialBalance);			
 		}
+	}
+	
+	public void sync(String name, int type, double initialBalance) {
+        final ProgressDialog progress = new ProgressDialog(this);
+        progress.setTitle("Czekaj");
+        progress.setCancelable(false);
+        progress.setMessage("Zapisywanie...");
+        progress.show();
+		
+        final String n = name;
+        final int t = type;
+        final double ib = initialBalance;
+        
+		WPAsyncTask syncTask = new WPAsyncTask(this, server) {
+
+			@Override
+			public void onFinished() {
+				progress.dismiss();
+				
+				runOnUiThread(new Runnable() {
+					public void run() {
+						finish();
+					}
+				});
+			}
+
+			@Override
+			public void run() {
+				long rid = server.createAccount(serverToken, n, t, ib);
+				
+				AccountDao dao = db.findAccountByName(n);
+				dao.rid = rid;
+				db.updateAccount(dao);
+				
+				onFinished();
+			}
+			
+		};
+		
+		new Thread(syncTask).start();
 	}
 	
 	void reportError(int strid) {

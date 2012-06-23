@@ -11,16 +11,6 @@ import android.util.Log;
 
 // /data/data/pl.edu.uj.portfel/databases/portfel
 
-/**
- * 
- * sqlite> .schema wpl_accounts
- * CREATE TABLE wpl_accounts ( _id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type INTEGER, ibalance DOUBLE );
- * 
- * sqlite> .schema wpl_transactions
- * CREATE TABLE wpl_transactions ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER , timestamp timestamp);
- *
- */
-
 public class Database extends SQLiteOpenHelper {
 
 	public static final String DATABASE_NAME = "portfel";
@@ -39,10 +29,10 @@ public class Database extends SQLiteOpenHelper {
 	@Override
 	public void onCreate(SQLiteDatabase db) {
 		Log.v("db", String.format("creating table %s", ACCOUNTS_TABLE_NAME));
-		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, type INTEGER, ibalance DOUBLE )", ACCOUNTS_TABLE_NAME));
+		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, rid INTEGER, name TEXT, type INTEGER, ibalance DOUBLE )", ACCOUNTS_TABLE_NAME));
 
 		Log.v("db", String.format("creating table %s", TRANSACTIONS_TABLE_NAME));
-		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, amount INTEGER, type INTEGER, timestamp TIMESTAMP )", TRANSACTIONS_TABLE_NAME));
+		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, accId INTEGER, rid INTEGER, amount INTEGER, type INTEGER, timestamp TIMESTAMP )", TRANSACTIONS_TABLE_NAME));
 		
 		Log.v("db", String.format("creating table %s", ATTRIBUTES_TABLE_NAME));
 		db.execSQL(String.format("CREATE TABLE %s ( _id INTEGER PRIMARY KEY AUTOINCREMENT, tId INTEGER, type INTEGER, title TEXT, aux1 TEXT, aux2 TEXT, aux3 TEXT)", ATTRIBUTES_TABLE_NAME));
@@ -101,6 +91,30 @@ public class Database extends SQLiteOpenHelper {
 		return ret;
 	}
 	
+	public long[] getAccountIds() {
+		int count = getAccountCount();
+		if(count == 0)
+			return new long[] { };
+		
+		long[] table = new long[count];
+		Cursor c = getReadableDatabase().query(ACCOUNTS_TABLE_NAME, new String[] { "_id" }, null, null, null, null, null, null);
+		if(c.getCount() != count) {
+			reporter.reportError(String.format("idcount: %d, Cursor count: %d", count, c.getCount()));
+			c.close();
+			return new long[] { };
+		}
+		
+		int pos = 0;
+		
+		while(! c.isLast()) {
+			c.moveToNext();
+			table[pos++] = c.getLong(0);
+		}
+		
+		c.close();
+		return table;
+	}
+	
 	public long[] getTransactionIds(long accId) {
 		int count = getTransactionCount(accId);
 		if(count == 0)
@@ -151,6 +165,17 @@ public class Database extends SQLiteOpenHelper {
 	
 	public AccountDao getAccountByIndex(int idx) {
 		Cursor c = getReadableDatabase().query(ACCOUNTS_TABLE_NAME, AccountDao.getColumnList(), "_id=?", new String[] { Integer.toString(idx) }, null, null, null, "1");
+		if(c.getCount() != 1) {
+			c.close();
+			return null;
+		}
+		
+		c.moveToFirst();
+		return AccountDao.newFromCursor(c);
+	}
+	
+	public AccountDao getAccountById(long id) {
+		Cursor c = getReadableDatabase().query(ACCOUNTS_TABLE_NAME, AccountDao.getColumnList(), "_id=?", new String[] { Long.toString(id) }, null, null, null, "1");
 		if(c.getCount() != 1) {
 			c.close();
 			return null;
@@ -241,6 +266,24 @@ public class Database extends SQLiteOpenHelper {
 			return true;
 		} catch(SQLException e) {
 			reportError(":( -- sql#1");
+			return false;
+		}
+	}
+	
+	public boolean updateAccount(AccountDao dao) {
+		if(dao.getId() == 0) {
+			reportError("can't update Account yet, because it doesn't have an ID yet");
+			return false;
+		}
+		
+		SQLiteDatabase db = getWritableDatabase();
+		ContentValues values = dao.toContentValues();
+		
+		try {
+			db.update(ACCOUNTS_TABLE_NAME, values, "_id=?", new String[] { String.valueOf(dao.getId()) });
+			return true;
+		} catch(SQLException e) {
+			reportError(":( -- sql#U");
 			return false;
 		}
 	}
